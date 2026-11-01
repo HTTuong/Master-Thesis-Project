@@ -28,3 +28,9 @@ In a third terminal, start the server that pushes updates over WebSocket (`--por
 ```sh
 npm run server
 ```
+
+In a fourth terminal, start the dashboard and open the URL it prints:
+
+```sh
+npm run dashboard
+```
