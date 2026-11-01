@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import type { FleetFeed } from '../fleet-feed.ts';
+import type { MetricsCollector } from '../metrics/collector.ts';
 import { createRenderer, type MapRenderer, type RendererName } from '../renderers/index.ts';
 
 interface FleetMapProps {
   feed: FleetFeed;
   rendererName: RendererName;
+  metrics: MetricsCollector | undefined;
   onSelect(vehicleId: string | null): void;
 }
 
@@ -12,7 +14,7 @@ interface FleetMapProps {
  * React owns only the container. The renderer receives updates straight from the
  * feed, so marker updates never go through React state or reconciliation.
  */
-export function FleetMap({ feed, rendererName, onSelect }: FleetMapProps) {
+export function FleetMap({ feed, rendererName, metrics, onSelect }: FleetMapProps) {
   const containerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -27,8 +29,9 @@ export function FleetMap({ feed, rendererName, onSelect }: FleetMapProps) {
       }
       renderer = created;
       void created.update(feed.vehicles.values());
-      unsubscribe = feed.subscribe((changed) => {
-        void created.update(changed);
+      unsubscribe = feed.subscribe((changed, arrivedAt) => {
+        const applied = created.update(changed);
+        metrics?.trackUpdate(applied, arrivedAt);
       });
     });
 
@@ -37,7 +40,7 @@ export function FleetMap({ feed, rendererName, onSelect }: FleetMapProps) {
       unsubscribe?.();
       renderer?.destroy();
     };
-  }, [feed, rendererName, onSelect]);
+  }, [feed, rendererName, metrics, onSelect]);
 
   return <section ref={containerRef} className="map" aria-label="Fleet map" />;
 }

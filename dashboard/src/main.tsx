@@ -17,12 +17,13 @@ declare global {
 }
 
 // The collector exists only for measurement runs, and the page starts and stops it from outside.
-if (params.has('metrics')) window.fleetMetrics = createMetricsCollector();
+const metrics = params.has('metrics') ? createMetricsCollector() : undefined;
+window.fleetMetrics = metrics;
 
 const feed = createFleetFeed(params.get('ws') ?? 'ws://127.0.0.1:8080');
 
 createRoot(document.querySelector('#root')!).render(
   <StrictMode>
-    <App feed={feed} rendererName={rendererName} />
+    <App feed={feed} rendererName={rendererName} metrics={metrics} />
   </StrictMode>,
 );

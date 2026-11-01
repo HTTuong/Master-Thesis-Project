@@ -8,14 +8,16 @@ import { StatusTimeSeries } from './components/StatusTimeSeries.tsx';
 import type { FleetFeed } from './fleet-feed.ts';
 import { countByStatus } from './fleet-summary.ts';
 import { useFleetSnapshot } from './hooks/useFleetSnapshot.ts';
+import type { MetricsCollector } from './metrics/collector.ts';
 import type { RendererName } from './renderers/index.ts';
 
 interface AppProps {
   feed: FleetFeed;
   rendererName: RendererName;
+  metrics: MetricsCollector | undefined;
 }
 
-export function App({ feed, rendererName }: AppProps) {
+export function App({ feed, rendererName, metrics }: AppProps) {
   const vehicles = useFleetSnapshot(feed);
   const counts = countByStatus(vehicles);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -23,7 +25,12 @@ export function App({ feed, rendererName }: AppProps) {
 
   return (
     <main className="layout">
-      <FleetMap feed={feed} rendererName={rendererName} onSelect={setSelectedId} />
+      <FleetMap
+        feed={feed}
+        rendererName={rendererName}
+        metrics={metrics}
+        onSelect={setSelectedId}
+      />
       <aside className="panel">
         <h1>Fleet monitor</h1>
         <ConnectionStatus feed={feed} />
