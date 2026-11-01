@@ -70,3 +70,41 @@ h1 {
   font-size: 11px;
   margin-top: auto;
 }
+
+.kpis {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+}
+
+.kpi {
+  border: 1px solid #d5dae0;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.kpi dt {
+  color: #5d6773;
+  font-size: 12px;
+}
+
+.kpi dd {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  margin: 0;
+}
+
+.status-label {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.status-dot {
+  border-radius: 50%;
+  display: inline-block;
+  height: 8px;
+  width: 8px;
+}

@@ -1,6 +1,8 @@
 import { ConnectionStatus } from './components/ConnectionStatus.tsx';
 import { FleetMap } from './components/FleetMap.tsx';
+import { KpiTiles } from './components/KpiTiles.tsx';
 import type { FleetFeed } from './fleet-feed.ts';
+import { countByStatus } from './fleet-summary.ts';
 import { useFleetSnapshot } from './hooks/useFleetSnapshot.ts';
 import type { RendererName } from './renderers/index.ts';
 
@@ -11,6 +13,7 @@ interface AppProps {
 
 export function App({ feed, rendererName }: AppProps) {
   const vehicles = useFleetSnapshot(feed);
+  const counts = countByStatus(vehicles);
 
   return (
     <main className="layout">
@@ -18,7 +21,7 @@ export function App({ feed, rendererName }: AppProps) {
       <aside className="panel">
         <h1>Fleet monitor</h1>
         <ConnectionStatus feed={feed} />
-        <p>{vehicles.length} vehicles</p>
+        <KpiTiles total={vehicles.length} counts={counts} />
         <footer className="attribution">Road data © OpenStreetMap contributors</footer>
       </aside>
     </main>
