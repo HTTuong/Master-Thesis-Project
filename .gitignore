@@ -7,3 +7,8 @@ CLAUDE.local.md
 # Thesis documents and context: kept locally only
 /docs/
 /CLAUDE.md
+
+# Build and tooling output
+node_modules/
+dist/
+.DS_Store
