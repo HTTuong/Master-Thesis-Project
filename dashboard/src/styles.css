@@ -27,17 +27,20 @@ body {
 
 .panel {
   border-left: 1px solid #d5dae0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   overflow: hidden;
   padding: 16px;
 }
 
 h1 {
   font-size: 18px;
-  margin: 0 0 8px;
+  margin: 0;
 }
 
 .connection {
-  margin: 0 0 12px;
+  margin: 0;
 }
 
 .connection::before {
@@ -60,4 +63,10 @@ h1 {
 
 .vehicle-marker {
   border-radius: 50%;
+}
+
+.attribution {
+  color: #5d6773;
+  font-size: 11px;
+  margin-top: auto;
 }

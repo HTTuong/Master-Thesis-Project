@@ -19,6 +19,7 @@ export function App({ feed, rendererName }: AppProps) {
         <h1>Fleet monitor</h1>
         <ConnectionStatus feed={feed} />
         <p>{vehicles.length} vehicles</p>
+        <footer className="attribution">Road data © OpenStreetMap contributors</footer>
       </aside>
     </main>
   );
