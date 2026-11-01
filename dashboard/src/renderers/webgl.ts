@@ -76,8 +76,10 @@ export async function create({ container, onSelect }: RendererOptions): Promise<
     void source.setData(data);
   };
 
+  // A setData call first fires events for its metadata, while the tiles still hold the
+  // old data. Only an event that carries a tile shows that new data has reached a tile.
   map.on('sourcedata', (event) => {
-    if (event.sourceId !== SOURCE_ID || inFlight.length === 0) return;
+    if (event.sourceId !== SOURCE_ID || inFlight.length === 0 || !event.tile) return;
     if (!map.isSourceLoaded(SOURCE_ID)) return;
     const done = inFlight;
     inFlight = [];
