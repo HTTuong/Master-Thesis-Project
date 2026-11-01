@@ -12,7 +12,7 @@ interface Entry {
 
 /** All vehicles are drawn on one Leaflet canvas, which redraws at most once per frame. */
 export function create({ container }: RendererOptions): MapRenderer {
-  const map = L.map(container).setView([CENTER.lat, CENTER.lon], LEAFLET_ZOOM);
+  const map = L.map(container, { zoomControl: false }).setView([CENTER.lat, CENTER.lon], LEAFLET_ZOOM);
   container.style.background = MAP_BACKGROUND;
   const canvas = L.canvas();
   const markers = new Map<string, Entry>();

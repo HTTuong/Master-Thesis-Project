@@ -14,7 +14,7 @@ interface Entry {
 
 /** One Leaflet marker, and so one DOM element, per vehicle. */
 export function create({ container }: RendererOptions): MapRenderer {
-  const map = L.map(container).setView([CENTER.lat, CENTER.lon], LEAFLET_ZOOM);
+  const map = L.map(container, { zoomControl: false }).setView([CENTER.lat, CENTER.lon], LEAFLET_ZOOM);
   container.style.background = MAP_BACKGROUND;
   const markers = new Map<string, Entry>();
 
