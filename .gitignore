@@ -1,0 +1,9 @@
+# Personal Claude Code files
+.claude/settings.json
+.claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
+
+# Thesis documents and context: kept locally only
+/docs/
+/CLAUDE.md
