@@ -1,6 +1,14 @@
+export type InteractionType = 'click' | 'wheel' | 'drag';
+
+export interface InteractionSample {
+  type: InteractionType;
+  latencyMs: number;
+}
+
 export interface MetricsSamples {
   frameTimesMs: number[];
   updateLatenciesMs: number[];
+  interactions: InteractionSample[];
 }
 
 export interface MetricsCollector {
@@ -18,7 +26,11 @@ const afterCurrentFrame = () =>
     channel.port2.postMessage(null);
   });
 
-const emptySamples = (): MetricsSamples => ({ frameTimesMs: [], updateLatenciesMs: [] });
+const emptySamples = (): MetricsSamples => ({
+  frameTimesMs: [],
+  updateLatenciesMs: [],
+  interactions: [],
+});
 
 /** Records samples only between start() and stop(), so warm-up can be excluded. */
 export function createMetricsCollector(): MetricsCollector {
@@ -36,15 +48,37 @@ export function createMetricsCollector(): MetricsCollector {
     frameRequest = requestAnimationFrame(onFrame);
   };
 
+  const recordInteraction = (type: InteractionType, event: Event) => {
+    if (!(event.target instanceof Element) || !event.target.closest('.map')) return;
+    const target = samples;
+    requestAnimationFrame(() => {
+      void afterCurrentFrame().then(() => {
+        target.interactions.push({ type, latencyMs: performance.now() - event.timeStamp });
+      });
+    });
+  };
+  const onClick = (event: Event) => recordInteraction('click', event);
+  const onWheel = (event: Event) => recordInteraction('wheel', event);
+  const onPointerMove = (event: PointerEvent) => {
+    if (event.buttons !== 0) recordInteraction('drag', event);
+  };
+  const listenerOptions = { capture: true, passive: true };
+
   return {
     start() {
       samples = emptySamples();
       recording = true;
       startFrameLoop();
+      window.addEventListener('click', onClick, listenerOptions);
+      window.addEventListener('wheel', onWheel, listenerOptions);
+      window.addEventListener('pointermove', onPointerMove, listenerOptions);
     },
     stop() {
       recording = false;
       cancelAnimationFrame(frameRequest);
+      window.removeEventListener('click', onClick, listenerOptions);
+      window.removeEventListener('wheel', onWheel, listenerOptions);
+      window.removeEventListener('pointermove', onPointerMove, listenerOptions);
       return samples;
     },
     trackUpdate(applied, arrivedAt) {
