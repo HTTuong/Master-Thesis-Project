@@ -1,7 +1,7 @@
 import type { Telemetry } from '../../../shared/telemetry.ts';
 
 export interface MapRenderer {
-  /** Applies changed vehicles. Resolves once the change will be in the next painted frame. */
+  /** Applies changed vehicles. Resolves inside the animation frame that draws the change. */
   update(vehicles: Iterable<Telemetry>): Promise<void>;
   destroy(): void;
 }
@@ -15,6 +15,7 @@ type RendererModule = { create(options: RendererOptions): MapRenderer | Promise<
 // Each renderer is loaded on demand, so a page only contains the library it measures.
 const loaders = {
   dom: (): Promise<RendererModule> => import('./dom.ts'),
+  canvas: (): Promise<RendererModule> => import('./canvas.ts'),
 };
 
 export type RendererName = keyof typeof loaders;

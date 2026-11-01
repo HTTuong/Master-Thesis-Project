@@ -35,4 +35,4 @@ In a fourth terminal, start the dashboard and open the URL it prints:
 npm run dashboard
 ```
 
-Choose the map renderer with `?renderer=dom`.
+Choose the map renderer with `?renderer=dom` or `?renderer=canvas`.

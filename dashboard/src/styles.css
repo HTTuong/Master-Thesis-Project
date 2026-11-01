@@ -61,15 +61,3 @@ h1 {
 .vehicle-marker {
   border-radius: 50%;
 }
-
-.status-moving {
-  background: #0ca30c;
-}
-
-.status-stopped {
-  background: #6f7780;
-}
-
-.status-delayed {
-  background: #ec835a;
-}
