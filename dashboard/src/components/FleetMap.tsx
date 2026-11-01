@@ -5,13 +5,14 @@ import { createRenderer, type MapRenderer, type RendererName } from '../renderer
 interface FleetMapProps {
   feed: FleetFeed;
   rendererName: RendererName;
+  onSelect(vehicleId: string | null): void;
 }
 
 /**
  * React owns only the container. The renderer receives updates straight from the
  * feed, so marker updates never go through React state or reconciliation.
  */
-export function FleetMap({ feed, rendererName }: FleetMapProps) {
+export function FleetMap({ feed, rendererName, onSelect }: FleetMapProps) {
   const containerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -19,7 +20,7 @@ export function FleetMap({ feed, rendererName }: FleetMapProps) {
     let renderer: MapRenderer | undefined;
     let unsubscribe: (() => void) | undefined;
 
-    void createRenderer(rendererName, { container: containerRef.current! }).then((created) => {
+    void createRenderer(rendererName, { container: containerRef.current!, onSelect }).then((created) => {
       if (cancelled) {
         created.destroy();
         return;
@@ -36,7 +37,7 @@ export function FleetMap({ feed, rendererName }: FleetMapProps) {
       unsubscribe?.();
       renderer?.destroy();
     };
-  }, [feed, rendererName]);
+  }, [feed, rendererName, onSelect]);
 
   return <section ref={containerRef} className="map" aria-label="Fleet map" />;
 }

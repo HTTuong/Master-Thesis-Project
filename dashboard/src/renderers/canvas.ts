@@ -11,11 +11,12 @@ interface Entry {
 }
 
 /** All vehicles are drawn on one Leaflet canvas, which redraws at most once per frame. */
-export function create({ container }: RendererOptions): MapRenderer {
+export function create({ container, onSelect }: RendererOptions): MapRenderer {
   const map = L.map(container, { zoomControl: false }).setView([CENTER.lat, CENTER.lon], LEAFLET_ZOOM);
   container.style.background = MAP_BACKGROUND;
   const canvas = L.canvas();
   const markers = new Map<string, Entry>();
+  map.on('click', () => onSelect(null));
 
   const addMarker = (vehicle: Telemetry) => {
     const marker = L.circleMarker([vehicle.lat, vehicle.lon], {
@@ -24,7 +25,9 @@ export function create({ container }: RendererOptions): MapRenderer {
       stroke: false,
       fillColor: STATUS_COLORS[vehicle.status],
       fillOpacity: 1,
+      bubblingMouseEvents: false,
     }).addTo(map);
+    marker.on('click', () => onSelect(vehicle.vehicleId));
     markers.set(vehicle.vehicleId, { marker, status: vehicle.status });
   };
 
