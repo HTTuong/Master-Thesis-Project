@@ -9,6 +9,8 @@ export interface MetricsSamples {
   frameTimesMs: number[];
   updateLatenciesMs: number[];
   interactions: InteractionSample[];
+  /** Main-thread JavaScript heap, sampled once per second. Chromium only. */
+  heapUsedBytes: number[];
 }
 
 export interface MetricsCollector {
@@ -26,10 +28,16 @@ const afterCurrentFrame = () =>
     channel.port2.postMessage(null);
   });
 
+const HEAP_SAMPLE_INTERVAL_MS = 1000;
+
+const readHeapUsed = () =>
+  (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize;
+
 const emptySamples = (): MetricsSamples => ({
   frameTimesMs: [],
   updateLatenciesMs: [],
   interactions: [],
+  heapUsedBytes: [],
 });
 
 /** Records samples only between start() and stop(), so warm-up can be excluded. */
@@ -37,6 +45,7 @@ export function createMetricsCollector(): MetricsCollector {
   let samples = emptySamples();
   let recording = false;
   let frameRequest = 0;
+  let heapTimer: ReturnType<typeof setInterval> | undefined;
 
   const startFrameLoop = () => {
     let previous: number | undefined;
@@ -69,6 +78,10 @@ export function createMetricsCollector(): MetricsCollector {
       samples = emptySamples();
       recording = true;
       startFrameLoop();
+      heapTimer = setInterval(() => {
+        const used = readHeapUsed();
+        if (used !== undefined) samples.heapUsedBytes.push(used);
+      }, HEAP_SAMPLE_INTERVAL_MS);
       window.addEventListener('click', onClick, listenerOptions);
       window.addEventListener('wheel', onWheel, listenerOptions);
       window.addEventListener('pointermove', onPointerMove, listenerOptions);
@@ -76,6 +89,7 @@ export function createMetricsCollector(): MetricsCollector {
     stop() {
       recording = false;
       cancelAnimationFrame(frameRequest);
+      clearInterval(heapTimer);
       window.removeEventListener('click', onClick, listenerOptions);
       window.removeEventListener('wheel', onWheel, listenerOptions);
       window.removeEventListener('pointermove', onPointerMove, listenerOptions);
