@@ -20,3 +20,17 @@ export function vehiclesNeedingAttention(vehicles: readonly Telemetry[]): Teleme
         a.vehicleId.localeCompare(b.vehicleId),
     );
 }
+
+export interface HistorySample {
+  time: number;
+  counts: StatusCounts;
+}
+
+/** Adds a sample and drops those older than the window. */
+export function appendSample(
+  history: readonly HistorySample[],
+  sample: HistorySample,
+  windowMs: number,
+): HistorySample[] {
+  return [...history.filter((s) => sample.time - s.time <= windowMs), sample];
+}

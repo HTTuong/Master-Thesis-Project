@@ -142,3 +142,29 @@ h1 {
   color: #5d6773;
   font-weight: 400;
 }
+
+.time-series svg {
+  display: block;
+  width: 100%;
+}
+
+.time-series text {
+  fill: #5d6773;
+  font-size: 10px;
+}
+
+.legend {
+  color: #5d6773;
+  display: flex;
+  font-size: 12px;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.chart-tooltip {
+  color: #1c2530;
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  min-height: 18px;
+}
