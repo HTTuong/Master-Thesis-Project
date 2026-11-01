@@ -16,3 +16,9 @@ Install [Eclipse Mosquitto](https://mosquitto.org/download/), then start the bro
 ```sh
 npm run broker
 ```
+
+In a second terminal, publish a simulated fleet (`--vehicles`, `--interval` in ms, `--seed`):
+
+```sh
+npm run simulator -- --vehicles 1000 --interval 1000
+```
