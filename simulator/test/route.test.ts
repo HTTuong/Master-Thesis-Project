@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildRoute, haversineMeters, positionAt } from '../src/route.js';
+import { buildRoute, haversineMeters, positionAt } from '../src/route.ts';
 
 const line = buildRoute([[23.0, 61.0], [23.0, 61.01], [23.0, 61.02]]);
 

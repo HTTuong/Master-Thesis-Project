@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "broker": "mosquitto -c broker/mosquitto.conf",
-    "simulator": "node simulator/src/index.js",
+    "simulator": "node simulator/src/index.ts",
     "server": "node server/src/index.js",
     "dashboard": "npm run dev -w dashboard",
     "test": "node --test \"*/test/*.test.*\"",

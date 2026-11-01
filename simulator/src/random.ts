@@ -1,5 +1,7 @@
+export type Random = () => number;
+
 /** Seeded generator (mulberry32) that makes simulator runs reproducible. Returns values in [0, 1). */
-export function createRandom(seed) {
+export function createRandom(seed: number): Random {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;

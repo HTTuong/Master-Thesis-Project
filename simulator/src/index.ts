@@ -1,9 +1,9 @@
-// Usage: node simulator/src/index.js --vehicles 1000 --interval 1000
+// Usage: node simulator/src/index.ts --vehicles 1000 --interval 1000
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import mqtt from 'mqtt';
-import { advanceVehicle, createFleet, toTelemetry } from './fleet.js';
-import { buildRoute } from './route.js';
+import { advanceVehicle, createFleet, toTelemetry } from './fleet.ts';
+import { buildRoute, type Coordinate } from './route.ts';
 
 const SLOT_MS = 100;
 
@@ -18,7 +18,8 @@ const { values: args } = parseArgs({
 const size = Number(args.vehicles);
 const intervalMs = Number(args.interval);
 
-const data = JSON.parse(await readFile(new URL('../data/tampere-routes.json', import.meta.url)));
+const file = await readFile(new URL('../data/tampere-routes.json', import.meta.url), 'utf8');
+const data = JSON.parse(file) as { routes: { coordinates: Coordinate[] }[] };
 const routes = data.routes.map((route) => buildRoute(route.coordinates));
 const { vehicles, random } = createFleet({ size, routes, seed: Number(args.seed) });
 
@@ -31,7 +32,7 @@ let slot = 0;
 const timer = setInterval(() => {
   const now = Date.now();
   for (let i = slot; i < vehicles.length; i += slotCount) {
-    const vehicle = vehicles[i];
+    const vehicle = vehicles[i]!;
     advanceVehicle(vehicle, intervalMs / 1000, random);
     client.publish(`fleet/vehicles/${vehicle.vehicleId}/telemetry`, JSON.stringify(toTelemetry(vehicle, now)));
   }
