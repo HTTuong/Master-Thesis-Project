@@ -4,7 +4,14 @@ import { createFleetStore } from './fleet-store.ts';
 const RECONNECT_DELAY_MS = 1000;
 
 export type ConnectionState = 'connecting' | 'open' | 'closed';
-type UpdateListener = (changed: Telemetry[], arrivedAt: number) => void;
+
+/** When an update was sent by the server (epoch ms) and dispatched in the page (performance time). */
+export interface UpdateTiming {
+  serverTs: number;
+  dispatchedAt: number;
+}
+
+type UpdateListener = (changed: Telemetry[], timing: UpdateTiming) => void;
 
 export interface FleetFeed {
   vehicles: ReadonlyMap<string, Telemetry>;
@@ -33,8 +40,10 @@ export function createFleetFeed(url: string): FleetFeed {
     const socket = new WebSocket(url);
     socket.addEventListener('open', () => setConnectionState('open'));
     socket.addEventListener('message', (event: MessageEvent<string>) => {
-      const changed = store.apply(JSON.parse(event.data) as FleetMessage);
-      for (const listener of updateListeners) listener(changed, event.timeStamp);
+      const message = JSON.parse(event.data) as FleetMessage;
+      const changed = store.apply(message);
+      const timing = { serverTs: message.serverTs, dispatchedAt: event.timeStamp };
+      for (const listener of updateListeners) listener(changed, timing);
     });
     socket.addEventListener('close', () => {
       setConnectionState('closed');
