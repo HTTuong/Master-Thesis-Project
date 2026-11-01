@@ -4,17 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fleet monitor</title>
-    <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <main class="layout">
-      <section id="map" class="map" aria-label="Fleet map"></section>
-      <aside class="panel">
-        <h1>Fleet monitor</h1>
-        <p id="connection" class="connection" data-state="connecting">Connecting</p>
-        <p id="vehicle-count">0 vehicles</p>
-      </aside>
-    </main>
-    <script type="module" src="/src/main.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
