@@ -108,3 +108,37 @@ h1 {
   height: 8px;
   width: 8px;
 }
+
+.status-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.status-list h2,
+.time-series h2 {
+  font-size: 13px;
+  margin: 0 0 6px;
+}
+
+.status-list ul {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.status-list li {
+  border-top: 1px solid #e8ebee;
+  display: flex;
+  font-variant-numeric: tabular-nums;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.status-list small {
+  color: #5d6773;
+  font-weight: 400;
+}
