@@ -8,3 +8,11 @@ Requires Node.js 24 or newer.
 npm install
 npm test
 ```
+
+## Running the pipeline
+
+Install [Eclipse Mosquitto](https://mosquitto.org/download/), then start the broker:
+
+```sh
+npm run broker
+```

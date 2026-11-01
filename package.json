@@ -2,9 +2,15 @@
   "name": "fleet-map-rendering",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
-  "workspaces": ["simulator", "server"],
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "simulator",
+    "server"
+  ],
   "scripts": {
+    "broker": "mosquitto -c broker/mosquitto.conf",
     "test": "node --test \"simulator/test/*.test.js\" \"server/test/*.test.js\""
   }
 }
