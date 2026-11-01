@@ -1,8 +1,8 @@
-// Usage: node server/src/index.js --port 8080 --flush 100
+// Usage: node server/src/index.ts --port 8080 --flush 100
 import { parseArgs } from 'node:util';
 import mqtt from 'mqtt';
-import { createFleetState } from './fleet-state.js';
-import { startPushServer } from './push-server.js';
+import { createFleetState } from './fleet-state.ts';
+import { startPushServer } from './push-server.ts';
 
 const TELEMETRY_TOPIC = 'fleet/vehicles/+/telemetry';
 
@@ -19,7 +19,7 @@ const client = await mqtt.connectAsync(args.broker);
 
 client.on('message', (_topic, payload) => {
   try {
-    state.ingest(JSON.parse(payload));
+    state.ingest(JSON.parse(payload.toString()));
   } catch {
     // A payload that is not JSON is dropped, like any other malformed message.
   }

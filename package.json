@@ -13,7 +13,7 @@
   "scripts": {
     "broker": "mosquitto -c broker/mosquitto.conf",
     "simulator": "node simulator/src/index.ts",
-    "server": "node server/src/index.js",
+    "server": "node server/src/index.ts",
     "dashboard": "npm run dev -w dashboard",
     "test": "node --test \"*/test/*.test.*\"",
     "typecheck": "tsc"
