@@ -23,17 +23,40 @@ test('vehicles get unique ids and share routes evenly', () => {
   assert.equal(vehicles[2].route, routes[0]);
 });
 
-test('advancing moves a vehicle by speed times elapsed time', () => {
+const neverChange = () => 0.999;
+const alwaysChange = () => 0;
+
+test('a moving vehicle advances by speed times elapsed time', () => {
   const [vehicle] = createFleet({ size: 1, routes, seed: 1 }).vehicles;
   const start = vehicle.distance;
-  advanceVehicle(vehicle, 10);
+  advanceVehicle(vehicle, 10, neverChange);
   assert.ok(Math.abs(vehicle.distance - start - vehicle.speedMps * 10) < 1e-9);
 });
 
-test('telemetry carries the id, position and timestamp', () => {
+test('a stopped vehicle stays in place and a delayed one moves at half speed', () => {
+  const [vehicle] = createFleet({ size: 1, routes, seed: 1 }).vehicles;
+  const start = vehicle.distance;
+  vehicle.status = 'stopped';
+  advanceVehicle(vehicle, 10, neverChange);
+  assert.equal(vehicle.distance, start);
+  vehicle.status = 'delayed';
+  advanceVehicle(vehicle, 10, neverChange);
+  assert.ok(Math.abs(vehicle.distance - start - vehicle.speedMps * 5) < 1e-9);
+});
+
+test('status transitions follow the model', () => {
+  const [vehicle] = createFleet({ size: 1, routes, seed: 1 }).vehicles;
+  advanceVehicle(vehicle, 1, alwaysChange);
+  assert.equal(vehicle.status, 'stopped');
+  advanceVehicle(vehicle, 1, alwaysChange);
+  assert.equal(vehicle.status, 'moving');
+});
+
+test('telemetry carries the id, position, status and timestamp', () => {
   const [vehicle] = createFleet({ size: 1, routes, seed: 1 }).vehicles;
   const message = toTelemetry(vehicle, 1234);
   assert.equal(message.vehicleId, 'v00001');
   assert.equal(message.ts, 1234);
+  assert.equal(message.status, 'moving');
   assert.ok(message.lat >= 61.0 && message.lat <= 61.1);
 });
