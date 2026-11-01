@@ -31,7 +31,7 @@ export function FleetMap({ feed, rendererName, metrics, onSelect }: FleetMapProp
       void created.update(feed.vehicles.values());
       unsubscribe = feed.subscribe((changed, arrivedAt) => {
         const applied = created.update(changed);
-        metrics?.trackUpdate(applied, arrivedAt);
+        metrics?.trackUpdate(applied, arrivedAt, changed.length);
       });
     });
 

@@ -1,7 +1,18 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2023",
+      "DOM"
+    ]
   },
-  "include": ["shared", "simulator", "server"]
+  "include": [
+    "shared",
+    "simulator",
+    "server",
+    "bench"
+  ]
 }
