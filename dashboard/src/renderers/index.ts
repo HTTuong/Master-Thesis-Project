@@ -16,6 +16,7 @@ type RendererModule = { create(options: RendererOptions): MapRenderer | Promise<
 const loaders = {
   dom: (): Promise<RendererModule> => import('./dom.ts'),
   canvas: (): Promise<RendererModule> => import('./canvas.ts'),
+  webgl: (): Promise<RendererModule> => import('./webgl.ts'),
 };
 
 export type RendererName = keyof typeof loaders;
