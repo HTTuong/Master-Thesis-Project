@@ -11,13 +11,15 @@ export interface MetricsSamples {
   interactions: InteractionSample[];
   /** Main-thread JavaScript heap, sampled once per second. Chromium only. */
   heapUsedBytes: number[];
+  /** Vehicle updates that reached the page, for checking the load generator kept up. */
+  vehicleUpdates: number;
 }
 
 export interface MetricsCollector {
   start(): void;
   stop(): MetricsSamples;
   /** Tracks one update, from the arrival of its message to the paint of the frame showing it. */
-  trackUpdate(applied: Promise<void>, arrivedAt: number): void;
+  trackUpdate(applied: Promise<void>, arrivedAt: number, vehicleCount: number): void;
 }
 
 /** Resolves after the current frame's paint step, when called from inside an animation frame. */
@@ -38,6 +40,7 @@ const emptySamples = (): MetricsSamples => ({
   updateLatenciesMs: [],
   interactions: [],
   heapUsedBytes: [],
+  vehicleUpdates: 0,
 });
 
 /** Records samples only between start() and stop(), so warm-up can be excluded. */
@@ -95,9 +98,10 @@ export function createMetricsCollector(): MetricsCollector {
       window.removeEventListener('pointermove', onPointerMove, listenerOptions);
       return samples;
     },
-    trackUpdate(applied, arrivedAt) {
+    trackUpdate(applied, arrivedAt, vehicleCount) {
       if (!recording) return;
       const target = samples;
+      target.vehicleUpdates += vehicleCount;
       void applied.then(afterCurrentFrame).then(() => {
         target.updateLatenciesMs.push(performance.now() - arrivedAt);
       });
