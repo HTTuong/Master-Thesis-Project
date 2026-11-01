@@ -34,3 +34,5 @@ In a fourth terminal, start the dashboard and open the URL it prints:
 ```sh
 npm run dashboard
 ```
+
+Choose the map renderer with `?renderer=dom`.
