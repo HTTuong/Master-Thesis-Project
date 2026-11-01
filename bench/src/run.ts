@@ -8,6 +8,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { parseArgs } from 'node:util';
 import { chromium, type Browser, type Page } from 'playwright';
 import { describeEnvironment } from './environment.ts';
+import { measureInteractions } from './interactions.ts';
 import { buildRunOrder, scenarioFileName, type Scenario } from './scenarios.ts';
 import { DASHBOARD_URL, ROOT, startDashboard, startFleet } from './stack.ts';
 
@@ -63,7 +64,8 @@ async function runScenario(browser: Browser, scenario: Scenario) {
     await page.goto(`${DASHBOARD_URL}?metrics&renderer=${scenario.renderer}`);
     await sleep(warmupMs);
     const passive = await measurePassive(page, durationMs);
-    return { scenario, warmupMs, durationMs, seed, errors, passive };
+    const interactive = await measureInteractions(page);
+    return { scenario, warmupMs, durationMs, seed, errors, passive, interactive };
   } finally {
     await context.close();
     await stopFleet();
