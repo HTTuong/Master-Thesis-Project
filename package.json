@@ -15,6 +15,11 @@
     "simulator": "node simulator/src/index.js",
     "server": "node server/src/index.js",
     "dashboard": "npm run dev -w dashboard",
-    "test": "node --test \"simulator/test/*.test.js\" \"server/test/*.test.js\" \"dashboard/test/*.test.js\""
+    "test": "node --test \"*/test/*.test.*\"",
+    "typecheck": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
   }
 }
