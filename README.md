@@ -22,3 +22,9 @@ In a second terminal, publish a simulated fleet (`--vehicles`, `--interval` in m
 ```sh
 npm run simulator -- --vehicles 1000 --interval 1000
 ```
+
+In a third terminal, start the server that pushes updates over WebSocket (`--port`, `--flush` in ms):
+
+```sh
+npm run server
+```
