@@ -36,3 +36,12 @@ npm run dashboard
 ```
 
 Choose the map renderer with `?renderer=dom`, `?renderer=canvas` or `?renderer=webgl`.
+
+## Running the benchmark
+
+Install the browser once, then run the scenario matrix. The benchmark starts every component itself, so stop any pipeline you started by hand. See `bench/src/run.ts` for all options.
+
+```sh
+npx playwright install chromium
+npm run bench -- --out results/raw/my-run
+```
