@@ -69,10 +69,19 @@ export function createMetricsCollector(): MetricsCollector {
       });
     });
   };
-  const onClick = (event: Event) => recordInteraction('click', event);
+  // The browser also fires click at the end of a drag, and that is not a click interaction.
+  let draggedSincePointerDown = false;
+  const onPointerDown = () => {
+    draggedSincePointerDown = false;
+  };
+  const onClick = (event: Event) => {
+    if (!draggedSincePointerDown) recordInteraction('click', event);
+  };
   const onWheel = (event: Event) => recordInteraction('wheel', event);
   const onPointerMove = (event: PointerEvent) => {
-    if (event.buttons !== 0) recordInteraction('drag', event);
+    if (event.buttons === 0) return;
+    draggedSincePointerDown = true;
+    recordInteraction('drag', event);
   };
   const listenerOptions = { capture: true, passive: true };
 
@@ -85,6 +94,7 @@ export function createMetricsCollector(): MetricsCollector {
         const used = readHeapUsed();
         if (used !== undefined) samples.heapUsedBytes.push(used);
       }, HEAP_SAMPLE_INTERVAL_MS);
+      window.addEventListener('pointerdown', onPointerDown, listenerOptions);
       window.addEventListener('click', onClick, listenerOptions);
       window.addEventListener('wheel', onWheel, listenerOptions);
       window.addEventListener('pointermove', onPointerMove, listenerOptions);
@@ -93,6 +103,7 @@ export function createMetricsCollector(): MetricsCollector {
       recording = false;
       cancelAnimationFrame(frameRequest);
       clearInterval(heapTimer);
+      window.removeEventListener('pointerdown', onPointerDown, listenerOptions);
       window.removeEventListener('click', onClick, listenerOptions);
       window.removeEventListener('wheel', onWheel, listenerOptions);
       window.removeEventListener('pointermove', onPointerMove, listenerOptions);
