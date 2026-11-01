@@ -9,7 +9,7 @@ const routes = [
 ];
 
 test('the same seed creates the same fleet', () => {
-  const summary = (seed) =>
+  const summary = (seed: number) =>
     createFleet({ size: 50, routes, seed }).vehicles.map((v) => [v.distance, v.speedMps]);
   assert.deepEqual(summary(7), summary(7));
   assert.notDeepEqual(summary(7), summary(8));
