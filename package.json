@@ -1,0 +1,10 @@
+{
+  "name": "fleet-map-rendering",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "workspaces": ["simulator", "server"],
+  "scripts": {
+    "test": "node --test \"simulator/test/*.test.js\" \"server/test/*.test.js\""
+  }
+}
