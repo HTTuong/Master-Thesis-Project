@@ -8,6 +8,8 @@ export interface MapRenderer {
 
 export interface RendererOptions {
   container: HTMLElement;
+  /** Called with the clicked vehicle's id, or null when the click hit no vehicle. */
+  onSelect(vehicleId: string | null): void;
 }
 
 type RendererModule = { create(options: RendererOptions): MapRenderer | Promise<MapRenderer> };

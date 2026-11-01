@@ -13,10 +13,11 @@ interface Entry {
 }
 
 /** One Leaflet marker, and so one DOM element, per vehicle. */
-export function create({ container }: RendererOptions): MapRenderer {
+export function create({ container, onSelect }: RendererOptions): MapRenderer {
   const map = L.map(container, { zoomControl: false }).setView([CENTER.lat, CENTER.lon], LEAFLET_ZOOM);
   container.style.background = MAP_BACKGROUND;
   const markers = new Map<string, Entry>();
+  map.on('click', () => onSelect(null));
 
   const addMarker = (vehicle: Telemetry) => {
     const marker = L.marker([vehicle.lat, vehicle.lon], {
@@ -26,6 +27,7 @@ export function create({ container }: RendererOptions): MapRenderer {
         iconSize: [MARKER_SIZE, MARKER_SIZE],
       }),
     }).addTo(map);
+    marker.on('click', () => onSelect(vehicle.vehicleId));
     marker.getElement()!.style.background = STATUS_COLORS[vehicle.status];
     markers.set(vehicle.vehicleId, { marker, status: vehicle.status });
   };

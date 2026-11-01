@@ -24,7 +24,7 @@ type Pending = () => void;
  * that time are combined into the next one, and each promise resolves in the frame
  * that actually draws its change.
  */
-export async function create({ container }: RendererOptions): Promise<MapRenderer> {
+export async function create({ container, onSelect }: RendererOptions): Promise<MapRenderer> {
   const map = new MapLibreMap({
     container,
     center: [CENTER.lon, CENTER.lat],
@@ -55,6 +55,11 @@ export async function create({ container }: RendererOptions): Promise<MapRendere
     },
   });
   const source = map.getSource<GeoJSONSource>(SOURCE_ID)!;
+
+  map.on('click', (event) => {
+    const [hit] = map.queryRenderedFeatures(event.point, { layers: [SOURCE_ID] });
+    onSelect((hit?.properties.vehicleId as string | undefined) ?? null);
+  });
 
   const features = new Map<string, Feature<Point>>();
   let waiting: Pending[] = [];
