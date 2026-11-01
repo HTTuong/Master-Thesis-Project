@@ -1,7 +1,14 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["shared", "simulator", "server"]
+  "include": [
+    "shared",
+    "simulator",
+    "server",
+    "bench"
+  ]
 }

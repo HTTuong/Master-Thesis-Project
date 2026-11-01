@@ -8,7 +8,8 @@
   "workspaces": [
     "simulator",
     "server",
-    "dashboard"
+    "dashboard",
+    "bench"
   ],
   "scripts": {
     "broker": "mosquitto -c broker/mosquitto.conf",
