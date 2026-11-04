@@ -24,6 +24,11 @@ const feed = createFleetFeed(params.get('ws') ?? 'ws://127.0.0.1:8080');
 
 createRoot(document.querySelector('#root')!).render(
   <StrictMode>
-    <App feed={feed} rendererName={rendererName} metrics={metrics} />
+    <App
+      feed={feed}
+      rendererName={rendererName}
+      metrics={metrics}
+      showPanels={params.get('panels') !== 'off'}
+    />
   </StrictMode>,
 );

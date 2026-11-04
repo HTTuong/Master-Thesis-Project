@@ -15,10 +15,12 @@ interface AppProps {
   feed: FleetFeed;
   rendererName: RendererName;
   metrics: MetricsCollector | undefined;
+  /** False only in overhead checks. The panel area stays, so the map keeps its size. */
+  showPanels: boolean;
 }
 
-export function App({ feed, rendererName, metrics }: AppProps) {
-  const vehicles = useFleetSnapshot(feed);
+export function App({ feed, rendererName, metrics, showPanels }: AppProps) {
+  const vehicles = useFleetSnapshot(feed, showPanels);
   const counts = countByStatus(vehicles);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = selectedId === null ? undefined : feed.vehicles.get(selectedId);
@@ -31,15 +33,19 @@ export function App({ feed, rendererName, metrics }: AppProps) {
         metrics={metrics}
         onSelect={setSelectedId}
       />
-      <aside className="panel">
-        <h1>Fleet monitor</h1>
-        <ConnectionStatus feed={feed} />
-        <KpiTiles total={vehicles.length} counts={counts} />
-        <SelectedVehicle vehicle={selected} />
-        <StatusTimeSeries counts={counts} refreshKey={vehicles} />
-        <StatusList vehicles={vehicles} />
-        <footer className="attribution">Road data © OpenStreetMap contributors</footer>
-      </aside>
+      {showPanels ? (
+        <aside className="panel">
+          <h1>Fleet monitor</h1>
+          <ConnectionStatus feed={feed} />
+          <KpiTiles total={vehicles.length} counts={counts} />
+          <SelectedVehicle vehicle={selected} />
+          <StatusTimeSeries counts={counts} refreshKey={vehicles} />
+          <StatusList vehicles={vehicles} />
+          <footer className="attribution">Road data © OpenStreetMap contributors</footer>
+        </aside>
+      ) : (
+        <aside className="panel" />
+      )}
     </main>
   );
 }
