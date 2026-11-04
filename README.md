@@ -35,7 +35,7 @@ In a fourth terminal, start the dashboard and open the URL it prints:
 npm run dashboard
 ```
 
-Choose the map renderer with `?renderer=dom`, `?renderer=canvas` or `?renderer=webgl`.
+Choose the map renderer with `?renderer=dom`, `?renderer=canvas` or `?renderer=webgl`. For overhead checks only, `?panels=off` leaves the side panel empty.
 
 ## Running the benchmark
 

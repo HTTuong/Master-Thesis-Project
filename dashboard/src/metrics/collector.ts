@@ -49,8 +49,12 @@ const emptySamples = (): MetricsSamples => ({
   vehicleUpdates: 0,
 });
 
-/** Records samples only between start() and stop(), so warm-up can be excluded. */
-export function createMetricsCollector(): MetricsCollector {
+/**
+ * Records samples only between start() and stop(), so warm-up can be excluded.
+ * With trackUpdates set to false, update latency is not tracked, which is used to
+ * estimate how much tracking each update costs.
+ */
+export function createMetricsCollector({ trackUpdates = true } = {}): MetricsCollector {
   let samples = emptySamples();
   let recording = false;
   let frameRequest = 0;
@@ -117,6 +121,10 @@ export function createMetricsCollector(): MetricsCollector {
     },
     trackUpdate(applied, timing, vehicleCount) {
       if (!recording) return;
+      if (!trackUpdates) {
+        samples.vehicleUpdates += vehicleCount;
+        return;
+      }
       const target = samples;
       target.vehicleUpdates += vehicleCount;
       void applied.then(afterCurrentFrame).then(() => {

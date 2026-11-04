@@ -17,13 +17,21 @@ declare global {
 }
 
 // The collector exists only for measurement runs, and the page starts and stops it from outside.
-const metrics = params.has('metrics') ? createMetricsCollector() : undefined;
+// `?metrics` records everything; `?metrics=frames` skips per-update tracking (overhead checks).
+const metrics = params.has('metrics')
+  ? createMetricsCollector({ trackUpdates: params.get('metrics') !== 'frames' })
+  : undefined;
 window.fleetMetrics = metrics;
 
 const feed = createFleetFeed(params.get('ws') ?? 'ws://127.0.0.1:8080');
 
 createRoot(document.querySelector('#root')!).render(
   <StrictMode>
-    <App feed={feed} rendererName={rendererName} metrics={metrics} />
+    <App
+      feed={feed}
+      rendererName={rendererName}
+      metrics={metrics}
+      showPanels={params.get('panels') !== 'off'}
+    />
   </StrictMode>,
 );
