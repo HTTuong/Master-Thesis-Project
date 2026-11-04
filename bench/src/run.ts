@@ -31,6 +31,8 @@ const { values: args } = parseArgs({
     warmup: { type: 'string', default: '120' },
     duration: { type: 'string', default: '120' },
     seed: { type: 'string', default: '1' },
+    // Extra URL parameters, for overhead checks only, for example "panels=off".
+    query: { type: 'string', default: '' },
   },
 });
 if (!args.out) throw new Error('--out is required');
@@ -39,6 +41,7 @@ const outDir = args.out;
 const warmupMs = Number(args.warmup) * 1000;
 const durationMs = Number(args.duration) * 1000;
 const seed = Number(args.seed);
+const extraQuery = args.query;
 
 const matrix = {
   renderers: list(args.renderers),
@@ -77,11 +80,13 @@ async function runScenario(browser: Browser, scenario: Scenario) {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   try {
-    await page.goto(`${DASHBOARD_URL}?metrics&renderer=${scenario.renderer}`);
+    const metricsParam = extraQuery.includes('metrics=') ? '' : 'metrics&';
+    const extra = extraQuery ? `&${extraQuery}` : '';
+    await page.goto(`${DASHBOARD_URL}?${metricsParam}renderer=${scenario.renderer}${extra}`);
     await sleep(warmupMs);
     const passive = await measurePassive(page, durationMs);
     const interactive = await measureInteractions(page);
-    return { scenario, warmupMs, durationMs, seed, errors, passive, interactive };
+    return { scenario, warmupMs, durationMs, seed, extraQuery, errors, passive, interactive };
   } finally {
     await context.close();
     await stopFleet();
@@ -106,6 +111,7 @@ try {
         warmupMs,
         durationMs,
         seed,
+        extraQuery,
         viewport: VIEWPORT,
         browserArgs: BROWSER_ARGS,
         browser: browser.version(),
