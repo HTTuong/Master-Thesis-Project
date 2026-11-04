@@ -1,3 +1,5 @@
+import type { UpdateTiming } from '../fleet-feed.ts';
+
 export type InteractionType = 'click' | 'wheel' | 'drag';
 
 export interface InteractionSample {
@@ -7,7 +9,10 @@ export interface InteractionSample {
 
 export interface MetricsSamples {
   frameTimesMs: number[];
-  updateLatenciesMs: number[];
+  /** From the server sending a message to the frame that shows it, including time queued in the page. */
+  sendToPaintLatenciesMs: number[];
+  /** From the page dispatching a message to the same frame. Excludes time queued before dispatch. */
+  dispatchToPaintLatenciesMs: number[];
   interactions: InteractionSample[];
   /** Main-thread JavaScript heap, sampled once per second. Chromium only. */
   heapUsedBytes: number[];
@@ -18,8 +23,8 @@ export interface MetricsSamples {
 export interface MetricsCollector {
   start(): void;
   stop(): MetricsSamples;
-  /** Tracks one update, from the arrival of its message to the paint of the frame showing it. */
-  trackUpdate(applied: Promise<void>, arrivedAt: number, vehicleCount: number): void;
+  /** Tracks one update until the frame showing it has been painted. */
+  trackUpdate(applied: Promise<void>, timing: UpdateTiming, vehicleCount: number): void;
 }
 
 /** Resolves after the current frame's paint step, when called from inside an animation frame. */
@@ -37,7 +42,8 @@ const readHeapUsed = () =>
 
 const emptySamples = (): MetricsSamples => ({
   frameTimesMs: [],
-  updateLatenciesMs: [],
+  sendToPaintLatenciesMs: [],
+  dispatchToPaintLatenciesMs: [],
   interactions: [],
   heapUsedBytes: [],
   vehicleUpdates: 0,
@@ -109,12 +115,13 @@ export function createMetricsCollector(): MetricsCollector {
       window.removeEventListener('pointermove', onPointerMove, listenerOptions);
       return samples;
     },
-    trackUpdate(applied, arrivedAt, vehicleCount) {
+    trackUpdate(applied, timing, vehicleCount) {
       if (!recording) return;
       const target = samples;
       target.vehicleUpdates += vehicleCount;
       void applied.then(afterCurrentFrame).then(() => {
-        target.updateLatenciesMs.push(performance.now() - arrivedAt);
+        target.sendToPaintLatenciesMs.push(Date.now() - timing.serverTs);
+        target.dispatchToPaintLatenciesMs.push(performance.now() - timing.dispatchedAt);
       });
     },
   };
