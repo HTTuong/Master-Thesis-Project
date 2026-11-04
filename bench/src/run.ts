@@ -26,8 +26,10 @@ const { values: args } = parseArgs({
     vehicles: { type: 'string', default: '100,500,1000,2000,5000,10000' },
     intervals: { type: 'string', default: '1000,5000' },
     repetitions: { type: 'string', default: '5' },
-    warmup: { type: 'string', default: '30' },
-    duration: { type: 'string', default: '60' },
+    // Chosen from 5-minute stabilization runs: process memory settled within about 120 s,
+    // and frame times at the heaviest load still varied between 30 s windows.
+    warmup: { type: 'string', default: '120' },
+    duration: { type: 'string', default: '120' },
     seed: { type: 'string', default: '1' },
   },
 });
