@@ -33,6 +33,9 @@ const { values: args } = parseArgs({
     seed: { type: 'string', default: '1' },
     // Extra URL parameters, for overhead checks only, for example "panels=off".
     query: { type: 'string', default: '' },
+    // Opens a visible browser window instead of running headless. The window must stay
+    // uncovered during the run, because hidden windows may throttle frames.
+    headed: { type: 'boolean', default: false },
   },
 });
 if (!args.out) throw new Error('--out is required');
@@ -101,7 +104,7 @@ const stopDashboard = await startDashboard();
 let browser: Browser | undefined;
 
 try {
-  browser = await chromium.launch({ args: BROWSER_ARGS });
+  browser = await chromium.launch({ args: BROWSER_ARGS, headless: !args.headed });
   await writeFile(
     `${outDir}/manifest.json`,
     `${JSON.stringify(
@@ -115,7 +118,7 @@ try {
         viewport: VIEWPORT,
         browserArgs: BROWSER_ARGS,
         browser: browser.version(),
-        headless: true,
+        headless: !args.headed,
         environment: describeEnvironment(),
       },
       null,
