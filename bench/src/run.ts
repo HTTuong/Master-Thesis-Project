@@ -9,6 +9,7 @@ import { parseArgs } from 'node:util';
 import { chromium, type Browser, type Page } from 'playwright';
 import { describeEnvironment } from './environment.ts';
 import { measureInteractions } from './interactions.ts';
+import { readChromiumMemory } from './process-memory.ts';
 import { buildRunOrder, scenarioFileName, type Scenario } from './scenarios.ts';
 import { DASHBOARD_URL, ROOT, startDashboard, startFleet } from './stack.ts';
 
@@ -44,10 +45,23 @@ const matrix = {
   repetitions: Number(args.repetitions),
 };
 
+const PROCESS_MEMORY_INTERVAL_MS = 1000;
+
+/**
+ * Besides the in-page samples, records the resident memory of all browser processes,
+ * which also covers web workers and the GPU process that the page heap leaves out.
+ */
 async function measurePassive(page: Page, milliseconds: number) {
+  const processMemory: ReturnType<typeof readChromiumMemory>[] = [];
   await page.evaluate(() => window.fleetMetrics!.start());
+  const timer = setInterval(
+    () => processMemory.push(readChromiumMemory()),
+    PROCESS_MEMORY_INTERVAL_MS,
+  );
   await sleep(milliseconds);
-  return page.evaluate(() => window.fleetMetrics!.stop());
+  clearInterval(timer);
+  const samples = await page.evaluate(() => window.fleetMetrics!.stop());
+  return { ...samples, processMemory };
 }
 
 async function runScenario(browser: Browser, scenario: Scenario) {
