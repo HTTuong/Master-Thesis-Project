@@ -11,6 +11,12 @@ const SERVER_PORT = 8080;
 const PREVIEW_PORT = 4173;
 export const DASHBOARD_URL = `http://127.0.0.1:${PREVIEW_PORT}/`;
 
+/** Vite's own entry script, run with Node so that no shell or .cmd shim is needed on Windows. */
+export const VITE_BIN = `${ROOT}node_modules/vite/bin/vite.js`;
+
+/** The Node binary running the benchmark, so that every component uses the same version. */
+const NODE = process.execPath;
+
 const PORT_TIMEOUT_MS = 15000;
 
 async function waitForPort(port: number): Promise<void> {
@@ -31,12 +37,13 @@ async function waitForPort(port: number): Promise<void> {
 }
 
 function startProcess(command: string, args: string[], cwd = ROOT): ChildProcess {
-  return spawn(command, args, { cwd, stdio: ['ignore', 'ignore', 'inherit'] });
+  return spawn(command, args, { cwd, stdio: ['ignore', 'ignore', 'inherit'], windowsHide: true });
 }
 
 async function stopProcess(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null) return;
   const exited = once(child, 'exit');
+  // On Windows any signal ends the process at once, which is enough between runs.
   child.kill('SIGTERM');
   await exited;
 }
@@ -45,10 +52,9 @@ export type Stop = () => Promise<void>;
 
 /** Serves the production build of the dashboard. It stays the same across runs. */
 export async function startDashboard(): Promise<Stop> {
-  const vite = `${ROOT}node_modules/.bin/vite`;
   const child = startProcess(
-    vite,
-    ['preview', '--host', '127.0.0.1', '--port', String(PREVIEW_PORT), '--strictPort'],
+    NODE,
+    [VITE_BIN, 'preview', '--host', '127.0.0.1', '--port', String(PREVIEW_PORT), '--strictPort'],
     `${ROOT}dashboard`,
   );
   await waitForPort(PREVIEW_PORT);
@@ -63,9 +69,9 @@ export async function startFleet(options: {
 }): Promise<Stop> {
   const broker = startProcess('mosquitto', ['-c', 'broker/mosquitto.conf']);
   await waitForPort(BROKER_PORT);
-  const server = startProcess('node', ['server/src/index.ts', '--port', String(SERVER_PORT)]);
+  const server = startProcess(NODE, ['server/src/index.ts', '--port', String(SERVER_PORT)]);
   await waitForPort(SERVER_PORT);
-  const simulator = startProcess('node', [
+  const simulator = startProcess(NODE, [
     'simulator/src/index.ts',
     '--vehicles',
     String(options.vehicles),

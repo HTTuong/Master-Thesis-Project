@@ -9,12 +9,13 @@ import { parseArgs } from 'node:util';
 import { chromium, type Browser, type Page } from 'playwright';
 import { describeEnvironment } from './environment.ts';
 import { measureInteractions } from './interactions.ts';
-import { readChromiumMemory } from './process-memory.ts';
+import { angleArgs } from './platform.ts';
+import { sampleChromiumMemory } from './process-memory.ts';
 import { buildRunOrder, scenarioFileName, type Scenario } from './scenarios.ts';
-import { DASHBOARD_URL, ROOT, startDashboard, startFleet } from './stack.ts';
+import { DASHBOARD_URL, ROOT, VITE_BIN, startDashboard, startFleet } from './stack.ts';
 
 const VIEWPORT = { width: 1280, height: 800 };
-const BROWSER_ARGS = ['--use-angle=metal', '--enable-gpu', '--enable-precise-memory-info'];
+const BROWSER_ARGS = [...angleArgs(), '--enable-gpu', '--enable-precise-memory-info'];
 
 const list = (value: string) => value.split(',');
 const numbers = (value: string) => list(value).map(Number);
@@ -60,16 +61,12 @@ const PROCESS_MEMORY_INTERVAL_MS = 1000;
  * which also covers web workers and the GPU process that the page heap leaves out.
  */
 async function measurePassive(page: Page, milliseconds: number) {
-  const processMemory: ReturnType<typeof readChromiumMemory>[] = [];
   await page.evaluate(() => window.fleetMetrics!.start());
-  const timer = setInterval(
-    () => processMemory.push(readChromiumMemory()),
-    PROCESS_MEMORY_INTERVAL_MS,
-  );
+  const stopSampling = sampleChromiumMemory(PROCESS_MEMORY_INTERVAL_MS);
   await sleep(milliseconds);
-  clearInterval(timer);
+  const { samples: processMemory, skipped: processMemorySkipped } = await stopSampling();
   const samples = await page.evaluate(() => window.fleetMetrics!.stop());
-  return { ...samples, processMemory };
+  return { ...samples, processMemory, processMemorySkipped };
 }
 
 async function runScenario(browser: Browser, scenario: Scenario) {
@@ -97,7 +94,9 @@ async function runScenario(browser: Browser, scenario: Scenario) {
 }
 
 await mkdir(outDir, { recursive: true });
-execFileSync('npm', ['run', 'build', '-w', 'dashboard'], { cwd: ROOT, stdio: 'ignore' });
+// Vite is started through Node itself, because Windows cannot spawn npm or the .bin shims
+// without a shell.
+execFileSync(process.execPath, [VITE_BIN, 'build'], { cwd: `${ROOT}dashboard`, stdio: 'ignore' });
 
 const order = buildRunOrder(matrix, seed);
 const stopDashboard = await startDashboard();

@@ -17,3 +17,23 @@ test('sums Chromium processes below the root by type and ignores the rest', () =
   assert.deepEqual(byType, { browser: 1024000, 'gpu-process': 2048000, renderer: 3584000 });
   assert.equal(totalBytes, 6656000);
 });
+
+// Lines as the Windows listing builds them from Win32_Process: CRLF endings, quoted paths,
+// and system processes without a command line.
+const win32 = [
+  '4 0 140 ',
+  '100 1 5000 "C:\\Program Files\\nodejs\\node.exe" bench/src/run.ts',
+  '200 100 1000 "C:\\pw\\chrome-headless-shell.exe" --headless',
+  '201 200 2000 "C:\\pw\\chrome-headless-shell.exe" --type=gpu-process',
+  '202 200 3000 "C:\\pw\\chrome-headless-shell.exe" --type=renderer',
+  '300 100 9000 mosquitto -c broker/mosquitto.conf',
+].join('\r\n');
+
+test('reads the Windows process listing in the same way', () => {
+  const rows = parsePs(win32);
+  assert.equal(rows.length, 6);
+  assert.equal(rows[0]!.command, '');
+  const { totalBytes, byType } = summarizeChromiumMemory(rows, 100);
+  assert.deepEqual(byType, { browser: 1024000, 'gpu-process': 2048000, renderer: 3072000 });
+  assert.equal(totalBytes, 6144000);
+});

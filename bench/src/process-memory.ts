@@ -1,4 +1,7 @@
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const run = promisify(execFile);
 
 export interface ProcessRow {
   pid: number;
@@ -9,14 +12,14 @@ export interface ProcessRow {
 
 export function parsePs(output: string): ProcessRow[] {
   return output
-    .split('\n')
-    .map((line) => line.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/))
+    .split(/\r?\n/)
+    .map((line) => line.trim().match(/^(\d+)\s+(\d+)\s+(\d+)(?:\s+(.*))?$/))
     .filter((match) => match !== null)
     .map(([, pid, ppid, rss, command]) => ({
       pid: Number(pid),
       ppid: Number(ppid),
       rssKb: Number(rss),
-      command: command!,
+      command: command ?? '',
     }));
 }
 
@@ -48,7 +51,57 @@ export function summarizeChromiumMemory(rows: ProcessRow[], rootPid: number) {
   return { totalBytes, byType };
 }
 
-export function readChromiumMemory(rootPid = process.pid) {
-  const output = execFileSync('ps', ['-A', '-o', 'pid=,ppid=,rss=,command='], { encoding: 'utf8' });
-  return summarizeChromiumMemory(parsePs(output), rootPid);
+/**
+ * Lists every process as "pid ppid residentKb command" lines. On macOS and Linux this is
+ * the resident set size from ps. Windows has no ps, so the same lines are built from
+ * Win32_Process, where the working set is the counterpart of the resident set size.
+ */
+async function listProcesses(platform: NodeJS.Platform = process.platform): Promise<string> {
+  if (platform === 'win32') {
+    const script =
+      "Get-CimInstance Win32_Process | ForEach-Object { '{0} {1} {2} {3}' -f " +
+      '$_.ProcessId, $_.ParentProcessId, [int64]($_.WorkingSetSize / 1024), $_.CommandLine }';
+    const { stdout } = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      windowsHide: true,
+    });
+    return stdout;
+  }
+  const { stdout } = await run('ps', ['-A', '-o', 'pid=,ppid=,rss=,command='], {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return stdout;
+}
+
+export async function readChromiumMemory(rootPid = process.pid) {
+  return summarizeChromiumMemory(parsePs(await listProcesses()), rootPid);
+}
+
+export type ChromiumMemory = Awaited<ReturnType<typeof readChromiumMemory>>;
+
+/**
+ * Samples Chromium memory at a fixed interval without blocking the event loop. A sample is
+ * skipped when the previous one has not finished, which matters on Windows, where one
+ * process listing takes a noticeable fraction of a second.
+ */
+export function sampleChromiumMemory(intervalMs: number) {
+  const samples: ChromiumMemory[] = [];
+  let pending: Promise<void> | undefined;
+  let skipped = 0;
+  const timer = setInterval(() => {
+    if (pending) {
+      skipped += 1;
+      return;
+    }
+    pending = readChromiumMemory()
+      .then((sample) => void samples.push(sample))
+      .finally(() => (pending = undefined));
+  }, intervalMs);
+  return async () => {
+    clearInterval(timer);
+    await pending;
+    return { samples, skipped };
+  };
 }
