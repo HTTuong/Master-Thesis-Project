@@ -45,3 +45,12 @@ Install the browser once, then run the scenario matrix. The benchmark starts eve
 npx playwright install chromium
 npm run bench -- --out results/raw/my-run
 ```
+
+## Analyzing the results
+
+The analysis reads one benchmark output folder and writes per-run and per-scenario tables (CSV), a markdown report with threshold crossings and data-quality checks, and one SVG figure per metric. A second folder with the same scenarios, for example runs in a visible browser window, can be compared with `--compare`.
+
+```sh
+npm run analyze -- --runs results/raw/my-run --out results/analysis/my-run
+npm run analyze -- --runs results/raw/my-run --compare results/raw/my-headed-run --out results/analysis/compare
+```
