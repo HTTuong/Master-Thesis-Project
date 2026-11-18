@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const run = promisify(execFile);
@@ -52,41 +52,95 @@ export function summarizeChromiumMemory(rows: ProcessRow[], rootPid: number) {
 }
 
 /**
- * Lists every process as "pid ppid residentKb command" lines. On macOS and Linux this is
- * the resident set size from ps. Windows has no ps, so the same lines are built from
- * Win32_Process, where the working set is the counterpart of the resident set size.
+ * Lists Chromium processes as "pid ppid residentKb command" lines, on request.
+ *
+ * On macOS and Linux each listing runs `ps` and gives the resident set size. Windows has no
+ * `ps`, and starting PowerShell for every sample took about 0.6 s, so one PowerShell process
+ * is kept open for the whole sampling period. It reads the working set (the Windows
+ * counterpart of the resident set size) from the .NET process list, and looks up the parent
+ * process and command line once per new process, which avoids a WMI query per sample.
  */
-async function listProcesses(platform: NodeJS.Platform = process.platform): Promise<string> {
-  if (platform === 'win32') {
-    const script =
-      "Get-CimInstance Win32_Process | ForEach-Object { '{0} {1} {2} {3}' -f " +
-      '$_.ProcessId, $_.ParentProcessId, [int64]($_.WorkingSetSize / 1024), $_.CommandLine }';
-    const { stdout } = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
-      encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024,
-      windowsHide: true,
-    });
-    return stdout;
-  }
-  const { stdout } = await run('ps', ['-A', '-o', 'pid=,ppid=,rss=,command='], {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  return stdout;
+export interface ProcessLister {
+  list(): Promise<string>;
+  close(): void;
 }
 
-export async function readChromiumMemory(rootPid = process.pid) {
-  return summarizeChromiumMemory(parsePs(await listProcesses()), rootPid);
+const MAX_BUFFER = 64 * 1024 * 1024;
+
+const WINDOWS_SAMPLER = `
+$ProgressPreference = 'SilentlyContinue'
+$cache = @{}
+while ($null -ne [Console]::In.ReadLine()) {
+  foreach ($p in [Diagnostics.Process]::GetProcesses()) {
+    if ($p.ProcessName -notlike '*chrom*') { continue }
+    try { $key = '{0}-{1}' -f $p.Id, $p.StartTime.Ticks } catch { continue }
+    if (-not $cache.ContainsKey($key)) {
+      $w = Get-CimInstance Win32_Process -Filter ('ProcessId = {0}' -f $p.Id)
+      $cache[$key] = @($w.ParentProcessId, $w.CommandLine)
+    }
+    [Console]::Out.WriteLine(('{0} {1} {2} {3}' -f $p.Id, $cache[$key][0], [int64]($p.WorkingSet64 / 1024), $cache[$key][1]))
+  }
+  [Console]::Out.WriteLine('END')
+  [Console]::Out.Flush()
+}
+`;
+
+function windowsLister(): ProcessLister {
+  // An encoded command keeps the multi-line script intact through Windows argument quoting.
+  const encoded = Buffer.from(WINDOWS_SAMPLER, 'utf16le').toString('base64');
+  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
+    stdio: ['pipe', 'pipe', 'inherit'],
+    windowsHide: true,
+  });
+  child.stdout.setEncoding('utf8');
+  let buffer = '';
+  const waiting: ((output: string) => void)[] = [];
+  child.stdout.on('data', (chunk: string) => {
+    buffer += chunk;
+    let end: number;
+    while ((end = buffer.search(/^END\r?$/m)) !== -1) {
+      const output = buffer.slice(0, end);
+      buffer = buffer.slice(buffer.indexOf('\n', end) + 1);
+      waiting.shift()?.(output);
+    }
+  });
+  return {
+    list: () =>
+      new Promise((resolve, reject) => {
+        if (child.exitCode !== null) return reject(new Error('process sampler has exited'));
+        waiting.push(resolve);
+        child.stdin.write('\n');
+      }),
+    close: () => {
+      child.stdin.end();
+    },
+  };
+}
+
+function psLister(): ProcessLister {
+  return {
+    list: async () =>
+      (await run('ps', ['-A', '-o', 'pid=,ppid=,rss=,command='], { encoding: 'utf8', maxBuffer: MAX_BUFFER }))
+        .stdout,
+    close: () => {},
+  };
+}
+
+export const createProcessLister = (platform: NodeJS.Platform = process.platform): ProcessLister =>
+  platform === 'win32' ? windowsLister() : psLister();
+
+export async function readChromiumMemory(lister: ProcessLister, rootPid = process.pid) {
+  return summarizeChromiumMemory(parsePs(await lister.list()), rootPid);
 }
 
 export type ChromiumMemory = Awaited<ReturnType<typeof readChromiumMemory>>;
 
 /**
  * Samples Chromium memory at a fixed interval without blocking the event loop. A sample is
- * skipped when the previous one has not finished, which matters on Windows, where one
- * process listing takes a noticeable fraction of a second.
+ * skipped when the previous one has not finished, and skipped samples are counted.
  */
 export function sampleChromiumMemory(intervalMs: number) {
+  const lister = createProcessLister();
   const samples: ChromiumMemory[] = [];
   let pending: Promise<void> | undefined;
   let skipped = 0;
@@ -95,13 +149,14 @@ export function sampleChromiumMemory(intervalMs: number) {
       skipped += 1;
       return;
     }
-    pending = readChromiumMemory()
+    pending = readChromiumMemory(lister)
       .then((sample) => void samples.push(sample))
       .finally(() => (pending = undefined));
   }, intervalMs);
   return async () => {
     clearInterval(timer);
     await pending;
+    lister.close();
     return { samples, skipped };
   };
 }
