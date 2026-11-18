@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util';
 import mqtt from 'mqtt';
 import { advanceVehicle, createFleet, toTelemetry } from './fleet.ts';
 import { buildRoute, type Coordinate } from './route.ts';
+import { startSlotClock } from './schedule.ts';
 
 const SLOT_MS = 100;
 
@@ -27,22 +28,21 @@ const client = await mqtt.connectAsync(args.broker);
 
 // Vehicles report in evenly spaced slots so the load is spread across the interval.
 const slotCount = Math.max(1, Math.round(intervalMs / SLOT_MS));
-let slot = 0;
-
-const timer = setInterval(() => {
+// Slots are timed from the start, so that late timers do not lower the message rate.
+const stopClock = startSlotClock(intervalMs / slotCount, (count) => {
+  const slot = count % slotCount;
   const now = Date.now();
   for (let i = slot; i < vehicles.length; i += slotCount) {
     const vehicle = vehicles[i]!;
     advanceVehicle(vehicle, intervalMs / 1000, random);
     client.publish(`fleet/vehicles/${vehicle.vehicleId}/telemetry`, JSON.stringify(toTelemetry(vehicle, now)));
   }
-  slot = (slot + 1) % slotCount;
-}, intervalMs / slotCount);
+});
 
 console.log(`Publishing ${size} vehicles every ${intervalMs} ms`);
 
 const shutdown = async () => {
-  clearInterval(timer);
+  stopClock();
   await client.endAsync();
   process.exit(0);
 };
