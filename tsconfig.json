@@ -13,6 +13,7 @@
     "shared",
     "simulator",
     "server",
-    "bench"
+    "bench",
+    "analysis"
   ]
 }
